@@ -14,12 +14,8 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
-import com.hwangjr.rxbus.Bus;
-import com.hwangjr.rxbus.RxBus;
-import com.hwangjr.rxbus.annotation.Subscribe;
-import com.hwangjr.rxbus.annotation.Tag;
 import com.room517.chitchat.App;
-import com.room517.chitchat.Def;
+import com.room517.chitchat.Event;
 import com.room517.chitchat.R;
 import com.room517.chitchat.db.ChatDao;
 import com.room517.chitchat.helpers.NotificationHelper;
@@ -27,6 +23,9 @@ import com.room517.chitchat.model.Chat;
 import com.room517.chitchat.model.ChatDetail;
 import com.room517.chitchat.ui.adapters.ChatListAdapter;
 import com.room517.chitchat.ui.dialogs.SimpleListDialog;
+
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -80,7 +79,7 @@ public class ChatListFragment extends BaseFragment {
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
         super.onCreateView(inflater, container, savedInstanceState);
-        RxBus.get().register(this);
+        EventBus.getDefault().register(this);
         super.init();
         return mContentView;
     }
@@ -88,13 +87,13 @@ public class ChatListFragment extends BaseFragment {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        Bus rxBus = RxBus.get();
+        EventBus eventBus = EventBus.getDefault();
         for (ChatListAdapter adapter : mAdapters) {
             if (adapter != null) {
-                rxBus.unregister(adapter);
+                eventBus.unregister(adapter);
             }
         }
-        rxBus.unregister(this);
+        eventBus.unregister(this);
     }
 
     @Override
@@ -209,14 +208,14 @@ public class ChatListFragment extends BaseFragment {
 
     }
 
-    @Subscribe(tags = { @Tag(Def.Event.ON_RECEIVE_MESSAGE) })
-    public void onMessageReceived(ChatDetail chatDetail) {
-        onNewMessage(chatDetail);
+    @Subscribe
+    public void onMessageReceived(Event.ReceiveMessage event) {
+        onNewMessage(event.chatDetail);
     }
 
-    @Subscribe(tags = { @Tag(Def.Event.ON_SEND_MESSAGE) })
-    public void onMessageSent(ChatDetail chatDetail) {
-        onNewMessage(chatDetail);
+    @Subscribe
+    public void onMessageSent(Event.SendMessage event) {
+        onNewMessage(event.chatDetail);
     }
 
     private void onNewMessage(ChatDetail chatDetail) {
@@ -230,8 +229,9 @@ public class ChatListFragment extends BaseFragment {
         }
     }
 
-    @Subscribe(tags = { @Tag(Def.Event.ON_CHAT_LIST_LONG_CLICKED) })
-    public void onChatListLongClicked(Chat chat) {
+    @Subscribe
+    public void onChatListLongClicked(Event.ChatListLongClick event) {
+        Chat chat = event.chat;
         SimpleListDialog sld = new SimpleListDialog();
 
         List<String> items = new ArrayList<>();

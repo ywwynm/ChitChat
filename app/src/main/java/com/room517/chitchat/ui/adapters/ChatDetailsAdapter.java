@@ -11,9 +11,8 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.hwangjr.rxbus.RxBus;
 import com.room517.chitchat.App;
-import com.room517.chitchat.Def;
+import com.room517.chitchat.Event;
 import com.room517.chitchat.R;
 import com.room517.chitchat.db.UserDao;
 import com.room517.chitchat.model.Chat;
@@ -21,6 +20,8 @@ import com.room517.chitchat.model.ChatDetail;
 import com.room517.chitchat.model.User;
 import com.room517.chitchat.utils.DateTimeUtil;
 import com.room517.chitchat.utils.DisplayUtil;
+
+import org.greenrobot.eventbus.EventBus;
 
 /**
  * Created by ywwynm on 2016/5/26.
@@ -143,8 +144,9 @@ public class ChatDetailsAdapter extends RecyclerView.Adapter<ChatDetailsAdapter.
             cv.setOnLongClickListener(new View.OnLongClickListener() {
                 @Override
                 public boolean onLongClick(View v) {
-                    RxBus.get().post(Def.Event.ON_CHAT_DETAIL_LONG_CLICKED,
-                            mChat.getChatDetails().get(getAdapterPosition()));
+                    EventBus.getDefault().post(
+                            new Event.ChatDetailLongClick(
+                                    mChat.getChatDetails().get(getAdapterPosition())));
                     return true;
                 }
             });

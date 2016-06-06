@@ -14,12 +14,9 @@ import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.ScrollView;
 
-import com.hwangjr.rxbus.RxBus;
-import com.hwangjr.rxbus.annotation.Subscribe;
-import com.hwangjr.rxbus.annotation.Tag;
 import com.orhanobut.logger.Logger;
 import com.room517.chitchat.App;
-import com.room517.chitchat.Def;
+import com.room517.chitchat.Event;
 import com.room517.chitchat.R;
 import com.room517.chitchat.helpers.LocationHelper;
 import com.room517.chitchat.helpers.RetrofitHelper;
@@ -29,6 +26,8 @@ import com.room517.chitchat.io.network.UserService;
 import com.room517.chitchat.model.User;
 import com.room517.chitchat.ui.activities.MainActivity;
 import com.room517.chitchat.ui.adapters.UserAdapter;
+
+import org.greenrobot.eventbus.EventBus;
 
 import java.util.List;
 
@@ -54,13 +53,6 @@ public class NearbyPeopleFragment extends BaseFragment {
     private RecyclerView mRecyclerView;
     private UserAdapter  mAdapter;
 
-    private boolean mShouldUpdateMainUiWhenDestroyed = true;
-
-    @Subscribe(tags = { @Tag(Def.Event.START_CHAT)})
-    public void dontUpdateMainUiWhenDestroyed(User user) {
-        mShouldUpdateMainUiWhenDestroyed = false;
-    }
-
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -72,8 +64,6 @@ public class NearbyPeopleFragment extends BaseFragment {
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
         super.onCreateView(inflater, container, savedInstanceState);
-        RxBus.get().register(this);
-
         super.init();
         return mContentView;
     }
@@ -86,10 +76,7 @@ public class NearbyPeopleFragment extends BaseFragment {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        if (mShouldUpdateMainUiWhenDestroyed) {
-            RxBus.get().post(Def.Event.BACK_FROM_FRAGMENT, new Object());
-        }
-        RxBus.get().unregister(this);
+        EventBus.getDefault().post(new Event.BackFromFragment());
     }
 
     @Override
@@ -112,7 +99,7 @@ public class NearbyPeopleFragment extends BaseFragment {
 
     @Override
     protected void initUI() {
-        RxBus.get().post(Def.Event.PREPARE_FOR_FRAGMENT, new Object());
+        EventBus.getDefault().post(new Event.PrepareForFragment());
         updateActionbar();
 
         updateLoadingState(true);

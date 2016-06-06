@@ -16,13 +16,11 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 
-import com.hwangjr.rxbus.RxBus;
-import com.hwangjr.rxbus.annotation.Subscribe;
-import com.hwangjr.rxbus.annotation.Tag;
 import com.orhanobut.logger.Logger;
 import com.room517.chitchat.App;
 import com.room517.chitchat.BuildConfig;
 import com.room517.chitchat.Def;
+import com.room517.chitchat.Event;
 import com.room517.chitchat.R;
 import com.room517.chitchat.db.ChatDao;
 import com.room517.chitchat.db.UserDao;
@@ -41,6 +39,9 @@ import com.room517.chitchat.ui.fragments.ExploreListFragment;
 import com.room517.chitchat.ui.fragments.NearbyPeopleFragment;
 import com.room517.chitchat.ui.views.FloatingActionButton;
 import com.room517.chitchat.utils.JsonUtil;
+
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
 
 import java.io.IOException;
 
@@ -67,7 +68,7 @@ public class MainActivity extends BaseActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        RxBus.get().register(this);
+        EventBus.getDefault().register(this);
 
         // 如果应用是安装后第一次打开，跳转到引导、"注册"页面
         // TODO: 2016/5/24 在正式版本中加上这些代码
@@ -98,7 +99,7 @@ public class MainActivity extends BaseActivity {
 
         User user = intent.getParcelableExtra(Def.Key.USER);
         if (user != null) {
-            startChat(user);
+            startChat(new Event.StartChat(user));
             intent.removeExtra(Def.Key.USER);
         }
     }
@@ -106,7 +107,7 @@ public class MainActivity extends BaseActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        RxBus.get().unregister(this);
+        EventBus.getDefault().unregister(this);
     }
 
     @Override
@@ -202,7 +203,7 @@ public class MainActivity extends BaseActivity {
             NotificationHelper.notifyMessage(this, fromId, chatDetail.getContent());
         }
 
-        RxBus.get().post(Def.Event.ON_RECEIVE_MESSAGE, chatDetail);
+        EventBus.getDefault().post(new Event.ReceiveMessage(chatDetail));
     }
 
     private void connectRongServer(String token) {
@@ -303,29 +304,29 @@ public class MainActivity extends BaseActivity {
         });
     }
 
-    @Subscribe(tags = { @Tag(Def.Event.PREPARE_FOR_FRAGMENT) })
-    public void prepareForFragments(Object event) {
+    @Subscribe
+    public void prepareForFragments(Event.PrepareForFragment event) {
         mTabLayout.setVisibility(View.GONE);
         mFab.shrink();
     }
 
-    @Subscribe(tags = { @Tag(Def.Event.BACK_FROM_FRAGMENT) })
-    public void backFromFragment(Object event) {
+    @Subscribe
+    public void backFromFragment(Event.BackFromFragment event) {
         setActionBarAppearance();
         mTabLayout.setVisibility(View.VISIBLE);
         mFab.spread();
     }
 
-    @Subscribe(tags = { @Tag(Def.Event.START_CHAT) })
-    public void startChat(User user) {
+    @Subscribe
+    public void startChat(Event.StartChat startChat) {
         FragmentManager fragmentManager = getSupportFragmentManager();
         fragmentManager.popBackStack();
 
         Bundle args = new Bundle();
-        args.putParcelable(Def.Key.USER, user);
+        args.putParcelable(Def.Key.USER, startChat.user);
         fragmentManager
                 .beginTransaction()
-                .replace(R.id.container_main, ChatDetailsFragment.newInstance(args))
+                .add(R.id.container_main, ChatDetailsFragment.newInstance(args))
                 .addToBackStack(ChatDetailsFragment.class.getName())
                 .commit();
     }

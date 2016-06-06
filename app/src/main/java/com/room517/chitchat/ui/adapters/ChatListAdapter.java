@@ -8,10 +8,8 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.hwangjr.rxbus.RxBus;
-import com.hwangjr.rxbus.annotation.Subscribe;
-import com.hwangjr.rxbus.annotation.Tag;
 import com.room517.chitchat.Def;
+import com.room517.chitchat.Event;
 import com.room517.chitchat.R;
 import com.room517.chitchat.db.ChatDao;
 import com.room517.chitchat.db.UserDao;
@@ -19,6 +17,9 @@ import com.room517.chitchat.model.Chat;
 import com.room517.chitchat.model.ChatDetail;
 import com.room517.chitchat.model.User;
 import com.room517.chitchat.utils.DateTimeUtil;
+
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -60,17 +61,17 @@ public class ChatListAdapter extends RecyclerView.Adapter<ChatListAdapter.ChatHo
             mUnreadCounts.add(0);
         }
 
-        RxBus.get().register(this); // TODO: 2016/5/30 更改adapter、删除时都要unregister RxBus
+        EventBus.getDefault().register(this); // TODO: 2016/5/30 更改adapter、删除时都要unregister RxBus
     }
 
-    @Subscribe(tags = { @Tag(Def.Event.ON_RECEIVE_MESSAGE) })
-    public void onMessageReceived(ChatDetail chatDetail) {
-        onNewChatDetailAdded(chatDetail, true);
+    @Subscribe
+    public void onMessageReceived(Event.ReceiveMessage event) {
+        onNewChatDetailAdded(event.chatDetail, true);
     }
 
-    @Subscribe(tags = { @Tag(Def.Event.ON_SEND_MESSAGE) })
-    public void onMessageSent(ChatDetail chatDetail) {
-        onNewChatDetailAdded(chatDetail, false);
+    @Subscribe
+    public void onMessageSent(Event.SendMessage event) {
+        onNewChatDetailAdded(event.chatDetail, false);
     }
 
     private void onNewChatDetailAdded(ChatDetail chatDetail, boolean receive) {
@@ -118,9 +119,9 @@ public class ChatListAdapter extends RecyclerView.Adapter<ChatListAdapter.ChatHo
         }
     }
 
-    @Subscribe(tags = { @Tag(Def.Event.CLEAR_UNREAD) })
-    public void clearUnread(User user) {
-        int pos = getInfoPosition(user.getId());
+    @Subscribe
+    public void clearUnread(Event.ClearUnread event) {
+        int pos = getInfoPosition(event.other.getId());
         if (pos != -1 && mUnreadCounts.get(pos) != 0) {
             mUnreadCounts.set(pos, 0);
             notifyItemChanged(pos);
@@ -236,15 +237,17 @@ public class ChatListAdapter extends RecyclerView.Adapter<ChatListAdapter.ChatHo
                     int pos = getAdapterPosition();
                     mUnreadCounts.set(pos, 0);
                     notifyItemChanged(pos);
-                    RxBus.get().post(Def.Event.START_CHAT, mUsers.get(pos));
+
+                    EventBus.getDefault().post(new Event.StartChat(mUsers.get(pos)));
                 }
             });
 
             itemView.setOnLongClickListener(new View.OnLongClickListener() {
                 @Override
                 public boolean onLongClick(View v) {
-                    RxBus.get().post(Def.Event.ON_CHAT_LIST_LONG_CLICKED,
-                            mChats.get(getAdapterPosition()));
+                    EventBus.getDefault().post(
+                            new Event.ChatListLongClick(
+                                    mChats.get(getAdapterPosition())));
                     return true;
                 }
             });

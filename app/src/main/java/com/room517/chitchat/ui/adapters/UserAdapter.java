@@ -8,11 +8,12 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.hwangjr.rxbus.RxBus;
-import com.room517.chitchat.Def;
+import com.room517.chitchat.Event;
 import com.room517.chitchat.R;
 import com.room517.chitchat.db.UserDao;
 import com.room517.chitchat.model.User;
+
+import org.greenrobot.eventbus.EventBus;
 
 import java.util.List;
 
@@ -88,7 +89,7 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserHolder> {
                 public void onClick(View v) {
                     User user = mUsers.get(getAdapterPosition());
                     UserDao.getInstance().insert(user);
-                    RxBus.get().post(Def.Event.START_CHAT, user);
+                    EventBus.getDefault().post(new Event.StartChat(user));
                 }
             });
         }

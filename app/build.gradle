@@ -43,6 +43,7 @@ dependencies {
     compile 'com.squareup.okhttp3:logging-interceptor:3.2.0'
     compile 'com.github.orhanobut:logger:1.12'
     compile 'com.amulyakhare:com.amulyakhare.textdrawable:1.0.1'
+    compile 'org.greenrobot:eventbus:3.0.0'
     compile 'com.hwangjr.rxbus:rxbus:1.0.3'
     compile 'joda-time:joda-time:2.9.3'
 }

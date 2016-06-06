@@ -19,13 +19,10 @@ import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.ImageView;
 
-import com.hwangjr.rxbus.Bus;
-import com.hwangjr.rxbus.RxBus;
-import com.hwangjr.rxbus.annotation.Subscribe;
-import com.hwangjr.rxbus.annotation.Tag;
 import com.orhanobut.logger.Logger;
 import com.room517.chitchat.App;
 import com.room517.chitchat.Def;
+import com.room517.chitchat.Event;
 import com.room517.chitchat.R;
 import com.room517.chitchat.db.ChatDao;
 import com.room517.chitchat.db.UserDao;
@@ -36,6 +33,9 @@ import com.room517.chitchat.ui.activities.MainActivity;
 import com.room517.chitchat.ui.adapters.ChatDetailsAdapter;
 import com.room517.chitchat.ui.dialogs.SimpleListDialog;
 import com.room517.chitchat.utils.KeyboardUtil;
+
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -96,7 +96,7 @@ public class ChatDetailsFragment extends BaseFragment {
                              @Nullable Bundle savedInstanceState) {
         super.onCreateView(inflater, container, savedInstanceState);
 
-        RxBus.get().register(this);
+        EventBus.getDefault().register(this);
 
         super.init();
         return mContentView;
@@ -107,10 +107,10 @@ public class ChatDetailsFragment extends BaseFragment {
         super.onDestroyView();
         removeCallbacks();
 
-        Bus rxBus = RxBus.get();
-        rxBus.post(Def.Event.CLEAR_UNREAD, mOther);
-        rxBus.post(Def.Event.BACK_FROM_FRAGMENT, new Object());
-        rxBus.unregister(this);
+        EventBus eventBus = EventBus.getDefault();
+        eventBus.post(new Event.ClearUnread(mOther));
+        eventBus.post(new Event.BackFromFragment());
+        eventBus.unregister(this);
     }
 
     @Override
@@ -170,7 +170,7 @@ public class ChatDetailsFragment extends BaseFragment {
 
     @Override
     protected void initUI() {
-        RxBus.get().post(Def.Event.PREPARE_FOR_FRAGMENT, new Object());
+        EventBus.getDefault().post(new Event.PrepareForFragment());
         updateActionbar();
         initRecyclerView();
 
@@ -239,7 +239,7 @@ public class ChatDetailsFragment extends BaseFragment {
 
                 sendMessage(chatDetail);
 
-                RxBus.get().post(Def.Event.ON_SEND_MESSAGE, chatDetail);
+                EventBus.getDefault().post(new Event.SendMessage(chatDetail));
             }
         });
     }
@@ -266,8 +266,9 @@ public class ChatDetailsFragment extends BaseFragment {
         KeyboardUtil.removeKeyboardCallback(mActivity.getWindow(), mKeyboardCallback);
     }
 
-    @Subscribe(tags = { @Tag(Def.Event.ON_RECEIVE_MESSAGE) })
-    public void onReceiveMessage(ChatDetail chatDetail) {
+    @Subscribe
+    public void onReceiveMessage(Event.ReceiveMessage event) {
+        ChatDetail chatDetail = event.chatDetail;
         if (!chatDetail.getFromId().equals(mOther.getId())) {
             return;
         }
@@ -284,8 +285,8 @@ public class ChatDetailsFragment extends BaseFragment {
         mRecyclerView.smoothScrollToPosition(count - 1);
     }
 
-    @Subscribe(tags = { @Tag(Def.Event.ON_CHAT_DETAIL_LONG_CLICKED) })
-    public void onChatDetailLongClicked(final ChatDetail chatDetail) {
+    @Subscribe
+    public void onChatDetailLongClicked(Event.ChatDetailLongClick event) {
         SimpleListDialog sld = new SimpleListDialog();
 
         List<String> items = new ArrayList<>();
@@ -294,6 +295,7 @@ public class ChatDetailsFragment extends BaseFragment {
         sld.setItems(items);
 
         List<View.OnClickListener> onItemClickListeners = new ArrayList<>();
+        ChatDetail chatDetail = event.chatDetail;
         onItemClickListeners.add(getCopyListener(sld, chatDetail));
         onItemClickListeners.add(getDeleteListener(sld, chatDetail));
         sld.setOnItemClickListeners(onItemClickListeners);
