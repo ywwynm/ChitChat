@@ -321,6 +321,7 @@ public class MainActivity extends BaseActivity {
     public void startChat(Event.StartChat startChat) {
         FragmentManager fragmentManager = getSupportFragmentManager();
         fragmentManager.popBackStack();
+        // TODO: 2016/6/6 bugs here
 
         Bundle args = new Bundle();
         args.putParcelable(Def.Key.USER, startChat.user);
